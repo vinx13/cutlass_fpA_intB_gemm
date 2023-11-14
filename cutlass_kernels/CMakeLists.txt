@@ -13,7 +13,8 @@
 # limitations under the License.
 
 
-include_directories(../cutlass_extensions/include/)
+include_directories(../tensorrt_llm/cutlass_extensions/include/)
+include_directories(../tensorrt_llm/)
 include_directories(${CUTLASS_DIR}/include)
 include_directories(../utils)
 include_directories(../)
