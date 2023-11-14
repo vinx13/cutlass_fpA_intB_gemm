@@ -16,34 +16,42 @@
 
 #include "cuda_utils.h"
 
-namespace fastertransformer {
+namespace fastertransformer
+{
 
 /* ***************************** common utils ****************************** */
 
 cudaError_t getSetDevice(int i_device, int* o_device)
 {
-    int         current_dev_id = 0;
-    cudaError_t err            = cudaSuccess;
+    int current_dev_id = 0;
+    cudaError_t err = cudaSuccess;
 
-    if (o_device != NULL) {
+    if (o_device != NULL)
+    {
         err = cudaGetDevice(&current_dev_id);
-        if (err != cudaSuccess) {
+        if (err != cudaSuccess)
+        {
             return err;
         }
-        if (current_dev_id == i_device) {
+        if (current_dev_id == i_device)
+        {
             *o_device = i_device;
         }
-        else {
+        else
+        {
             err = cudaSetDevice(i_device);
-            if (err != cudaSuccess) {
+            if (err != cudaSuccess)
+            {
                 return err;
             }
             *o_device = current_dev_id;
         }
     }
-    else {
+    else
+    {
         err = cudaSetDevice(i_device);
-        if (err != cudaSuccess) {
+        if (err != cudaSuccess)
+        {
             return err;
         }
     }
@@ -52,4 +60,4 @@ cudaError_t getSetDevice(int i_device, int* o_device)
 }
 
 /* ************************** end of common utils ************************** */
-}  // namespace fastertransformer
+} // namespace fastertransformer
