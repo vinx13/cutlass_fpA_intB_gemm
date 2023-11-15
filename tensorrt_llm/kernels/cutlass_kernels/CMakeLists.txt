@@ -12,17 +12,19 @@
 #See the License for the specific language governing permissions and
 #limitations under the License.
 
-include_directories(../../ cutlass_extensions / include /) include_directories(../../)
-    include_directories(${CUTLASS_DIR} / include) include_directories(../../ common) include_directories(../../../)
-        include_directories(${CUDA_TOOLKIT_ROOT_DIR} / include) link_directories(${CUDA_TOOLKIT_ROOT_DIR} / lib64)
 
-            set(CMAKE_CUDA_FLAGS
-                "${CMAKE_CUDA_FLAGS} -t 8 \
+include_directories(../../cutlass_extensions/include/)
+include_directories(../../)
+include_directories(${CUTLASS_DIR}/include)
+include_directories(../../common)
+include_directories(../../../)
+include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
+
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -t 8 \
                       -gencode=arch=compute_70,code=\\\"sm_70,compute_70\\\" \
                       -gencode=arch=compute_75,code=\\\"sm_75,compute_75\\\" \
                       -gencode=arch=compute_80,code=\\\"sm_80,compute_80\\\" \
                       ")
 
-                add_library(fpA_intB_gemm SHARED fpA_intB_gemm.cu cutlass_heuristic.cc cutlass_preprocessors.cc ${
-                                CMAKE_CURRENT_SOURCE_DIR}
-                    /../../ common / logger.cc ${CMAKE_CURRENT_SOURCE_DIR} /../../ common / cuda_utils.cc)
+add_library(fpA_intB_gemm SHARED fpA_intB_gemm.cu cutlass_heuristic.cc cutlass_preprocessors.cc ${CMAKE_CURRENT_SOURCE_DIR}/../../common/logger.cc ${CMAKE_CURRENT_SOURCE_DIR}/../../common/cuda_utils.cc)
