@@ -24,7 +24,7 @@
 #include "cutlass_extensions/compute_occupancy.h"
 
 #include "cutlass_extensions/epilogue_helpers.h"
-#include "cutlass_extensions/ft_gemm_configs.h"
+#include "cutlass_extensions/gemm_configs.h"
 #include "cutlass_extensions/gemm/kernel/default_fpA_intB_traits.h"
 #include "cutlass_extensions/gemm/kernel/fpA_intB_gemm.h"
 #include "cutlass_extensions/gemm/kernel/fpA_intB_gemm_with_broadcast.h"
@@ -36,8 +36,11 @@
 #include "cuda_utils.h"
 #include "fpA_intB_gemm.h"
 
-namespace fastertransformer
-{
+namespace tensorrt_llm {
+namespace kernels {
+namespace cutlass_kernels {
+
+using namespace tensorrt_llm::cutlass_extensions;
 
 template <typename T, typename WeightType, typename arch, typename EpilogueTag, typename ThreadblockShape,
     typename WarpShape, int Stages>
@@ -45,7 +48,7 @@ void generic_mixed_gemm_kernelLauncher(const T* A, const WeightType* B, const T*
     int m, int n, int k, int bias_stride, CutlassGemmConfig gemm_config, char* workspace, size_t workspace_bytes,
     cudaStream_t stream, int* occupancy = nullptr)
 {
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
     static_assert(cutlass::platform::is_same<T, half>::value || cutlass::platform::is_same<T, float>::value,
         "Specialized for half, float");
 
@@ -87,7 +90,7 @@ void generic_mixed_gemm_kernelLauncher(const T* A, const WeightType* B, const T*
 
     if (occupancy != nullptr)
     {
-        *occupancy = compute_occupancy_for_kernel<GemmKernel>();
+        *occupancy = tensorrt_llm::cutlass_extensions::compute_occupancy_for_kernel<GemmKernel>();
         return;
     }
 
@@ -118,7 +121,7 @@ void generic_mixed_gemm_kernelLauncher(const T* A, const WeightType* B, const T*
     Gemm gemm;
     if (gemm.get_workspace_size(args) > workspace_bytes)
     {
-        FT_LOG_WARNING(
+        TLLM_LOG_WARNING(
             "Requested split-k but workspace size insufficient. Falling back to non-split-k implementation.");
         // If requested split-k factor will require more workspace bytes, revert to standard gemm.
         args.batch_count = 1;
@@ -158,7 +161,7 @@ struct dispatch_stages
         cudaStream_t stream, int* occupancy = nullptr)
     {
 
-        FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+        TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
         std::string err_msg = "Cutlass fpA_intB gemm. Not instantiates for arch "
             + std::to_string(arch::kMinComputeCapability) + " with stages set to " + std::to_string(Stages);
         throw std::runtime_error("[FT Error][dispatch_stages::dispatch] " + err_msg);
@@ -174,7 +177,7 @@ struct dispatch_stages<T, WeightType, arch, EpilogueTag, ThreadblockShape, WarpS
         cudaStream_t stream, int* occupancy = nullptr)
     {
 
-        FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+        TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
         generic_mixed_gemm_kernelLauncher<T, WeightType, arch, EpilogueTag, ThreadblockShape, WarpShape, 2>(A, B,
             weight_scales, biases, C, m, n, k, bias_stride, gemm_config, workspace, workspace_bytes, stream, occupancy);
     }
@@ -190,7 +193,7 @@ struct dispatch_stages<T, WeightType, cutlass::arch::Sm80, EpilogueTag, Threadbl
         cudaStream_t stream, int* occupancy = nullptr)
     {
 
-        FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+        TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
         generic_mixed_gemm_kernelLauncher<T, WeightType, cutlass::arch::Sm80, EpilogueTag, ThreadblockShape, WarpShape,
             Stages>(A, B, weight_scales, biases, C, m, n, k, bias_stride, gemm_config, workspace, workspace_bytes,
             stream, occupancy);
@@ -204,7 +207,7 @@ void dispatch_gemm_config(const T* A, const WeightType* B, const T* weight_scale
     int* occupancy = nullptr)
 {
 
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
     switch (gemm_config.stages)
     {
     case 2:
@@ -235,7 +238,7 @@ void dispatch_gemm_to_cutlass(const T* A, const WeightType* B, const T* weight_s
     cudaStream_t stream, int* occupancy = nullptr)
 {
 
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
 
     // Note that SIMT configs are omitted here since they are not supported for fpA_intB.
     // We also only instantiate configs here where threadblockShapeM == warpShapeM since those usually perform the best
@@ -274,7 +277,8 @@ void dispatch_gemm_to_cutlass(const T* A, const WeightType* B, const T* weight_s
 template <typename T, typename WeightType>
 CutlassFpAIntBGemmRunner<T, WeightType>::CutlassFpAIntBGemmRunner()
 {
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    using namespace tensorrt_llm::common;
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
     int device{-1};
     check_cuda_error(cudaGetDevice(&device));
     sm_ = getSMVersion();
@@ -284,7 +288,7 @@ CutlassFpAIntBGemmRunner<T, WeightType>::CutlassFpAIntBGemmRunner()
 template <typename T, typename WeightType>
 CutlassFpAIntBGemmRunner<T, WeightType>::~CutlassFpAIntBGemmRunner()
 {
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
 }
 
 template <typename T, typename WeightType>
@@ -293,7 +297,7 @@ void CutlassFpAIntBGemmRunner<T, WeightType>::dispatch_to_arch<EpilogueTag>(cons
     const T* weight_scales, const T* biases, T* C, int m, int n, int k, int bias_stride, CutlassGemmConfig gemm_config,
     char* workspace_ptr, const size_t workspace_bytes, cudaStream_t stream, int* occupancy)
 {
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
     if (sm_ >= 70 && sm_ < 75)
     {
         dispatch_gemm_to_cutlass<T, WeightType, cutlass::arch::Sm70, EpilogueTag>(A, B, weight_scales, biases, C, m, n,
@@ -322,7 +326,7 @@ void CutlassFpAIntBGemmRunner<T, WeightType>::run_gemm<EpilogueTag>(const T* A, 
     const T* weight_scales, const T* biases, T* C, int m, int n, int k, int bias_stride, char* workspace_ptr,
     const size_t workspace_bytes, cudaStream_t stream)
 {
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
     static constexpr bool is_weight_only = !std::is_same<T, WeightType>::value;
     std::vector<CutlassGemmConfig> candidate_configs = get_candidate_configs(sm_, is_weight_only, false);
     std::vector<int> occupancies(candidate_configs.size());
@@ -346,7 +350,7 @@ void CutlassFpAIntBGemmRunner<T, WeightType>::gemm_bias_act(const T* A, const We
     const T* biases, T* C, int m, int n, int k, int bias_stride, ActivationType activation_type, char* workspace_ptr,
     const size_t workspace_bytes, cudaStream_t stream)
 {
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
 
     switch (activation_type)
     {
@@ -385,7 +389,7 @@ template <typename T, typename WeightType>
 void CutlassFpAIntBGemmRunner<T, WeightType>::gemm(const T* A, const WeightType* B, const T* weight_scales, T* C, int m,
     int n, int k, char* workspace_ptr, const size_t workspace_bytes, cudaStream_t stream)
 {
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
     run_gemm<EpilogueOpNoBias>(A, B, weight_scales, nullptr, C, m, n, k, 0, workspace_ptr, workspace_bytes, stream);
 }
 
@@ -653,7 +657,7 @@ void CutlassFpAIntBGemmRunner<T, WeightType>::gemm_bias_act_residual(const T* A,
 template <typename T, typename WeightType>
 int CutlassFpAIntBGemmRunner<T, WeightType>::getWorkspaceSize(const int m, const int n, const int k)
 {
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+    TLLM_LOG_DEBUG(__PRETTY_FUNCTION__);
     // TODO(masahi): Shouldn't it be 0?
 
     // These are the min tile sizes for each config, which would launch the maximum number of blocks
@@ -663,4 +667,6 @@ int CutlassFpAIntBGemmRunner<T, WeightType>::getWorkspaceSize(const int m, const
     return max_grid_m * max_grid_n * split_k_limit * 4;
 }
 
-} // namespace fastertransformer
+} // namespace cutlass_kernels 
+} // namespace kernels
+} // namespace tensorrt_llm

@@ -17,11 +17,14 @@
 #pragma once
 
 #include "common/activation_types.h"
-#include "cutlass_extensions/include/cutlass_extensions/ft_gemm_configs.h"
+#include "cutlass_extensions/include/cutlass_extensions/gemm_configs.h"
 #include <cuda_runtime_api.h>
 
-namespace fastertransformer
-{
+namespace tensorrt_llm {
+namespace kernels {
+namespace cutlass_kernels {
+
+using tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
 
 /*
   This runner only supports:
@@ -73,4 +76,6 @@ private:
     int multi_processor_count_;
 };
 
-} // namespace fastertransformer
+} // namespace cutlass_kernels
+} // namespace kernels
+} // namespace tensorrt_llm
