@@ -1,5 +1,5 @@
 /***************************************************************************************************
- * Copyright (c) 2017 - 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2017 - 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,38 +29,30 @@
  *
  **************************************************************************************************/
 /*! \file
-    \brief Defines new layouts needed for MoE
+  \brief Defines iterators used by warp-level matrix multiply operations targeting Tensor Cores.
 */
-#pragma once
 
-#include "cutlass/cutlass.h"
-#include "cutlass/fast_math.h"
-#include "cutlass/matrix_coord.h"
-#include "cutlass/pitch_linear_coord.h"
+#pragma once
 
 namespace cutlass
 {
-namespace layout
-{
 
-template <int RowsPerTile, int ColumnsInterleaved>
-struct ColumnMajorTileInterleave
+enum class WeightOnlyQuantOp
 {
-    static constexpr int kRowsPerTile = RowsPerTile;
-    static constexpr int kColumnsInterleaved = ColumnsInterleaved;
+    UNDEFINED,
+    PER_COLUMN_SCALE_ONLY,
+    FINEGRAINED_SCALE_ONLY,
+    FINEGRAINED_SCALE_AND_ZEROS
 };
 
-template <class T>
-struct IsColumnMajorTileInterleave
+constexpr bool isFinegrained(WeightOnlyQuantOp op)
 {
-    static constexpr bool value = false;
-};
+    return op == WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS || op == WeightOnlyQuantOp::FINEGRAINED_SCALE_ONLY;
+}
 
-template <int U, int V>
-struct IsColumnMajorTileInterleave<ColumnMajorTileInterleave<U, V>>
+constexpr bool hasZero(WeightOnlyQuantOp op)
 {
-    static constexpr bool value = true;
-};
+    return op == WeightOnlyQuantOp::FINEGRAINED_SCALE_AND_ZEROS;
+}
 
-} // namespace layout
 } // namespace cutlass
