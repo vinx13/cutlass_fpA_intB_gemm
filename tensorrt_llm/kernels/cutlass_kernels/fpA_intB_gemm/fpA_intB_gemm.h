@@ -20,9 +20,12 @@
 #include "cutlass_extensions/include/cutlass_extensions/gemm_configs.h"
 #include <cuda_runtime_api.h>
 
-namespace tensorrt_llm {
-namespace kernels {
-namespace cutlass_kernels {
+namespace tensorrt_llm
+{
+namespace kernels
+{
+namespace cutlass_kernels
+{
 
 using tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
 

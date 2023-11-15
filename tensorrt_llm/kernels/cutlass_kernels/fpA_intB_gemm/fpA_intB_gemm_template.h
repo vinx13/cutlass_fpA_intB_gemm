@@ -24,11 +24,11 @@
 #include "cutlass_extensions/compute_occupancy.h"
 
 #include "cutlass_extensions/epilogue_helpers.h"
-#include "cutlass_extensions/gemm_configs.h"
 #include "cutlass_extensions/gemm/kernel/default_fpA_intB_traits.h"
 #include "cutlass_extensions/gemm/kernel/fpA_intB_gemm.h"
 #include "cutlass_extensions/gemm/kernel/fpA_intB_gemm_with_broadcast.h"
 #include "cutlass_extensions/gemm/threadblock/default_mma.h"
+#include "cutlass_extensions/gemm_configs.h"
 
 #pragma GCC diagnostic pop
 
@@ -36,9 +36,12 @@
 #include "cuda_utils.h"
 #include "fpA_intB_gemm.h"
 
-namespace tensorrt_llm {
-namespace kernels {
-namespace cutlass_kernels {
+namespace tensorrt_llm
+{
+namespace kernels
+{
+namespace cutlass_kernels
+{
 
 using namespace tensorrt_llm::cutlass_extensions;
 
@@ -667,6 +670,6 @@ int CutlassFpAIntBGemmRunner<T, WeightType>::getWorkspaceSize(const int m, const
     return max_grid_m * max_grid_n * split_k_limit * 4;
 }
 
-} // namespace cutlass_kernels 
+} // namespace cutlass_kernels
 } // namespace kernels
 } // namespace tensorrt_llm

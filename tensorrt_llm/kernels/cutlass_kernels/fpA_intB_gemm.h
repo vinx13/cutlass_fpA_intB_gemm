@@ -4,8 +4,8 @@
 #include <string>
 
 #include "cutlass/half.h"
-#include "cutlass/integer_subbyte.h"
 #include "cutlass/numeric_types.h"
+#include "cutlass/integer_subbyte.h"
 #include <cuda_runtime.h>
 
 namespace tensorrt_llm
