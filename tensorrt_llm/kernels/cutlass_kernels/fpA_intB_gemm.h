@@ -8,7 +8,11 @@
 #include "cutlass/numeric_types.h"
 #include <cuda_runtime.h>
 
-namespace fastertransformer
+namespace tensorrt_llm
+{
+namespace kernels
+{
+namespace cutlass_kernels
 {
 
 using half = cutlass::half_t;
@@ -29,4 +33,6 @@ void gemm_fp16_int_bias_act_residual(const half* A, const WeightType* B, const h
     const half* residual, half* C, const std::string& activation, const std::string& binary_op,
     const std::string& unary_op, int m, int n, int k, char* workspace_ptr, size_t workspace_bytes, cudaStream_t stream);
 
-} // namespace fastertransformer
+} // namespace cutlass_kernels
+} // namespace kernels
+} // namespace tensorrt_llm

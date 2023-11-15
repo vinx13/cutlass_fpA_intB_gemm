@@ -18,7 +18,7 @@
 
 #include "cuda_utils.h"
 
-namespace fastertransformer
+namespace tensorrt_llm
 {
 
 enum class ActivationType
