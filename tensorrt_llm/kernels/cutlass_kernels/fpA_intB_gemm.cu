@@ -22,12 +22,14 @@ ActivationType get_activation(const std::string& activation_name)
     return ActivationType::InvalidType;
 }
 
-template <typename WeightType>
+using cutlass::WeightOnlyQuantOp;
+
+template <typename WeightType, WeightOnlyQuantOp QuantOp>
 void gemm_fp16_int_bias_act(const half* A, const WeightType* B, const half* weight_scales, const half* bias, half* C,
     std::optional<std::string> activation, int m, int n, int k, int bias_stride, char* workspace_ptr,
     size_t workspace_bytes, cudaStream_t stream)
 {
-    CutlassFpAIntBGemmRunner<half, WeightType> runner;
+    CutlassFpAIntBGemmRunner<half, WeightType, QuantOp> runner;
 
     if (!activation && bias == nullptr)
     {
@@ -45,32 +47,32 @@ void gemm_fp16_int_bias_act(const half* A, const WeightType* B, const half* weig
     }
 }
 
-template <typename WeightType>
-void gemm_fp16_int_bias_act_residual(const half* A, const WeightType* B, const half* weight_scales, const half* bias,
-    const half* residual, half* C, const std::string& activation, const std::string& binary_op,
-    const std::string& unary_op, int m, int n, int k, char* workspace_ptr, size_t workspace_bytes, cudaStream_t stream)
-{
-    CutlassFpAIntBGemmRunner<half, WeightType> runner;
+// template <typename WeightType, WeightOnlyQuantOp QuantOp>
+// void gemm_fp16_int_bias_act_residual(const half* A, const WeightType* B, const half* weight_scales, const half* bias,
+//     const half* residual, half* C, const std::string& activation, const std::string& binary_op,
+//     const std::string& unary_op, int m, int n, int k, char* workspace_ptr, size_t workspace_bytes, cudaStream_t stream)
+// {
+//     CutlassFpAIntBGemmRunner<half, WeightType, QuantOp> runner;
+// 
+//     runner.gemm_bias_act_residual(A, B, weight_scales, bias, residual, C, m, n, k, activation, binary_op, unary_op,
+//         workspace_ptr, workspace_bytes, stream);
+// }
 
-    runner.gemm_bias_act_residual(A, B, weight_scales, bias, residual, C, m, n, k, activation, binary_op, unary_op,
-        workspace_ptr, workspace_bytes, stream);
-}
-
-template void gemm_fp16_int_bias_act<uint4b_t>(const half* A, const uint4b_t* B, const half* weight_scales,
+template void gemm_fp16_int_bias_act<uint4b_t, WeightOnlyQuantOp::PER_COLUMN_SCALE_ONLY>(const half* A, const uint4b_t* B, const half* weight_scales,
     const half* bias, half* C, std::optional<std::string> activation, int m, int n, int k, int bias_stride,
     char* workspace_ptr, size_t workspace_bytes, cudaStream_t stream);
 
-template void gemm_fp16_int_bias_act_residual<uint4b_t>(const half* A, const uint4b_t* B, const half* weight_scales,
-    const half* bias, const half* residual, half* C, const std::string& activation, const std::string& binary_op,
-    const std::string& unary_op, int m, int n, int k, char* workspace_ptr, size_t workspace_bytes, cudaStream_t stream);
+// template void gemm_fp16_int_bias_act_residual<uint4b_t, WeightOnlyQuantOp::PER_COLUMN_SCALE_ONLY>(const half* A, const uint4b_t* B, const half* weight_scales,
+//     const half* bias, const half* residual, half* C, const std::string& activation, const std::string& binary_op,
+//     const std::string& unary_op, int m, int n, int k, char* workspace_ptr, size_t workspace_bytes, cudaStream_t stream);
 
-template void gemm_fp16_int_bias_act<uint8_t>(const half* A, const uint8_t* B, const half* weight_scales,
+template void gemm_fp16_int_bias_act<uint8_t, WeightOnlyQuantOp::PER_COLUMN_SCALE_ONLY>(const half* A, const uint8_t* B, const half* weight_scales,
     const half* bias, half* C, std::optional<std::string> activation, int m, int n, int k, int bias_stride,
     char* workspace_ptr, size_t workspace_bytes, cudaStream_t stream);
 
-template void gemm_fp16_int_bias_act_residual<uint8_t>(const half* A, const uint8_t* B, const half* weight_scales,
-    const half* bias, const half* residual, half* C, const std::string& activation, const std::string& binary_op,
-    const std::string& unary_op, int m, int n, int k, char* workspace_ptr, size_t workspace_bytes, cudaStream_t stream);
+// template void gemm_fp16_int_bias_act_residual<uint8_t, WeightOnlyQuantOp::PER_COLUMN_SCALE_ONLY>(const half* A, const uint8_t* B, const half* weight_scales,
+//     const half* bias, const half* residual, half* C, const std::string& activation, const std::string& binary_op,
+//     const std::string& unary_op, int m, int n, int k, char* workspace_ptr, size_t workspace_bytes, cudaStream_t stream);
 
 } // namespace cutlass_kernels
 } // namespace kernels
