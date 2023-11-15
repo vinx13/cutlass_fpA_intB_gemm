@@ -16,7 +16,6 @@
 include_directories(../../cutlass_extensions/include/)
 include_directories(../../)
 include_directories(${CUTLASS_DIR}/include)
-include_directories(../../common)
 include_directories(../../../)
 include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
 link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
