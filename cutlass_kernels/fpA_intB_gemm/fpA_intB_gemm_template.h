@@ -24,7 +24,7 @@
 #include "cutlass_extensions/compute_occupancy.h"
 
 #include "cutlass_extensions/epilogue_helpers.h"
-#include "cutlass_extensions/ft_gemm_configs.h"
+#include "cutlass_extensions/gemm_configs.h"
 #include "cutlass_extensions/gemm/kernel/default_fpA_intB_traits.h"
 #include "cutlass_extensions/gemm/kernel/fpA_intB_gemm.h"
 #include "cutlass_extensions/gemm/kernel/fpA_intB_gemm_with_broadcast.h"
@@ -37,6 +37,8 @@
 #include "cuda_utils.h"
 
 namespace fastertransformer {
+
+using namespace tensorrt_llm::cutlass_extensions;
 
 template<typename T,
          typename WeightType,
@@ -125,10 +127,11 @@ void generic_mixed_gemm_kernelLauncher(const T*          A,
             n :
             k * GemmKernel::kInterleave;
 
-    typename Gemm::Arguments args({m, n, k},
+    typename Gemm::Arguments args({m, n, k}, /*group_size=*/k,
                                   {reinterpret_cast<ElementType*>(const_cast<T*>(A)), k},
                                   {reinterpret_cast<CutlassWeightType*>(const_cast<WeightType*>(B)), ldb},
                                   {reinterpret_cast<ElementType*>(const_cast<T*>(weight_scales)), 0},
+                                  /*weight_zero_points=*/{nullptr, 0},
 				  // TODO: Support more general bias shape
                                   {reinterpret_cast<ElementType*>(const_cast<T*>(biases)), bias_stride},
                                   {reinterpret_cast<ElementType*>(C), n},
@@ -603,6 +606,7 @@ void dispatch_gemm_residual(const T *A, const WeightType *B,
 
   // TODO: Support batch
   const int batch_count = 1;
+  const int group_size = k;
   const auto lda = k;
   const int ldb =
       cutlass::platform::is_same<cutlass::layout::RowMajor,
@@ -612,7 +616,7 @@ void dispatch_gemm_residual(const T *A, const WeightType *B,
   const int ldc = n;
 
   typename Gemm::Arguments args(
-      {m, n, k}, batch_count,
+      {m, n, k}, group_size, batch_count,
       {ElementAccumulator(1.f), ElementAccumulator(1.f)}, A, B, weight_scales,
       residual, C, biases, nullptr, 0, 0, 0, 0, 0, 0, lda, ldb, ldc, ldc, 0, 0);
 
