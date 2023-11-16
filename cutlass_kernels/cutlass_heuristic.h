@@ -19,9 +19,11 @@
 #include <vector>
 #include <cstddef>
 #include <cstdint>
-#include "cutlass_extensions/ft_gemm_configs.h"
+#include "cutlass_extensions/gemm_configs.h"
 
 namespace fastertransformer {
+
+using tensorrt_llm::cutlass_extensions::CutlassGemmConfig;
 
 std::vector<CutlassGemmConfig> get_candidate_configs(int sm, const bool is_weight_only, const bool simt_configs_only);
 
