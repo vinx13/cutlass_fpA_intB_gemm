@@ -217,7 +217,8 @@ struct dispatch_stages
 
 template <typename T, typename WeightType, typename arch, cutlass::WeightOnlyQuantOp QuantOp, typename EpilogueTag,
     typename ThreadblockShape, typename WarpShape>
-struct dispatch_stages<T, WeightType, arch, QuantOp, EpilogueTag, ThreadblockShape, WarpShape, 2>
+struct dispatch_stages<T, WeightType, arch, QuantOp, EpilogueTag, ThreadblockShape, WarpShape, 2,
+    std::enable_if_t<!isFinegrained(QuantOp)>>
 {
     static void dispatch(const T* A, const WeightType* B, const T* weight_scales, const T* biases, T* C, int m, int n,
         int k, int group_size, int bias_stride, CutlassGemmConfig gemm_config, char* workspace, size_t workspace_bytes,
@@ -379,7 +380,7 @@ void CutlassFpAIntBGemmRunner<T, WeightType, QuantOp>::run_gemm<EpilogueTag>(con
 {
     FT_LOG_DEBUG(__PRETTY_FUNCTION__);
     static constexpr bool is_weight_only = !std::is_same<T, WeightType>::value;
-    std::vector<CutlassGemmConfig> candidate_configs = get_candidate_configs(sm_, is_weight_only, false);
+    std::vector<CutlassGemmConfig> candidate_configs = get_candidate_configs(sm_, is_weight_only, QuantOp, false);
     std::vector<int> occupancies(candidate_configs.size());
 
     for (size_t ii = 0; ii < candidate_configs.size(); ++ii)
@@ -556,7 +557,12 @@ void dispatch_gemm_residual(CutlassGemmConfig config, const T* A, const WeightTy
     const T* biases, const T* residual, T* C, int m, int n, int k, int group_size, char* workspace_ptr,
     const size_t workspace_bytes, cudaStream_t stream)
 {
-    if constexpr (std::is_same<Arch, cutlass::arch::Sm75>::value)
+    if constexpr (cutlass::isFinegrained(QuantOp) && Arch::kMinComputeCapability < 80)
+    {
+        throw std::runtime_error("Fine grained kernels are only supported on Ampere and above.");
+        return;
+    }
+    else if constexpr (std::is_same<Arch, cutlass::arch::Sm75>::value)
     {
         dispatch_gemm_residual<T, WeightType, cutlass::arch::Sm75, QuantOp, EpilogueOp, 2>(config.tile_config, A, B,
             weight_scales, biases, residual, C, m, n, k, group_size, workspace_ptr, workspace_bytes, stream);
@@ -683,7 +689,7 @@ void CutlassFpAIntBGemmRunner<T, WeightType, QuantOp>::gemm_bias_act_residual(co
     const size_t workspace_bytes, cudaStream_t stream)
 {
 
-    std::vector<CutlassGemmConfig> candidate_configs = get_candidate_configs(sm_, true, false);
+    std::vector<CutlassGemmConfig> candidate_configs = get_candidate_configs(sm_, true, QuantOp, false);
     std::vector<int> occupancies(candidate_configs.size());
 
     for (size_t ii = 0; ii < candidate_configs.size(); ++ii)

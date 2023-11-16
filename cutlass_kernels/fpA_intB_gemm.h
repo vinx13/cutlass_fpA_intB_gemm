@@ -7,6 +7,7 @@
 #include "cutlass/numeric_types.h"
 #include "cutlass/half.h"
 #include "cutlass/integer_subbyte.h"
+#include "cutlass_extensions/include/cutlass_extensions/weight_only_quant_op.h"
 
 namespace fastertransformer {
 
@@ -19,18 +20,18 @@ void preprocess_weights(int8_t *preprocessed_quantized_weight,
 
 // TODO: Support more general bias shape
 
-template <typename WeightType>
+template <typename WeightType, cutlass::WeightOnlyQuantOp QuantOp>
 void gemm_fp16_int_bias_act(const half *A, const WeightType *B,
 			    const half *weight_scales, const half *bias,
 			    half *C, std::optional<std::string> activation, int m,
-			    int n, int k, int bias_stride, char *workspace_ptr,
+			    int n, int k, int group_size, int bias_stride, char *workspace_ptr,
 			    size_t workspace_bytes, cudaStream_t stream);
 
-template <typename WeightType>
+template <typename WeightType, cutlass::WeightOnlyQuantOp QuantOp>
 void gemm_fp16_int_bias_act_residual(
     const half *A, const WeightType *B, const half *weight_scales,
     const half *bias, const half *residual, half *C, const std::string& activation, const std::string& binary_op,
-    const std::string& unary_op, int m, int n, int k, char *workspace_ptr, size_t workspace_bytes, cudaStream_t stream);
+    const std::string& unary_op, int m, int n, int k, int group_size, char *workspace_ptr, size_t workspace_bytes, cudaStream_t stream);
 
 
 } // namespace fastertransformer
