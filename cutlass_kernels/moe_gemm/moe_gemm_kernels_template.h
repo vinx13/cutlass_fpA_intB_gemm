@@ -347,36 +347,36 @@ void dispatch_moe_gemm_to_cutlass(const T* A, const WeightType* B, const T* weig
 }
 
 // This overload will handle simt gemms. It is disabled via SFINAE for tensorop.
-template <typename T, typename WeightType, typename arch, typename EpilogueTag,
-    typename std::enable_if<std::is_same<T, float>::value>::type* = nullptr>
-void dispatch_moe_gemm_to_cutlass(const T* A, const WeightType* B, const T* weight_scales, const T* biases, T* C,
-    int64_t* total_rows_before_expert, int64_t total_rows, int64_t gemm_n, int64_t gemm_k, int num_experts,
-    CutlassGemmConfig gemm_config, int sm_version, int multi_processor_count, cudaStream_t stream,
-    int* occupancy = nullptr)
-{
+// template <typename T, typename WeightType, typename arch, typename EpilogueTag,
+//     typename std::enable_if<std::is_same<T, float>::value>::type* = nullptr>
+// void dispatch_moe_gemm_to_cutlass(const T* A, const WeightType* B, const T* weight_scales, const T* biases, T* C,
+//     int64_t* total_rows_before_expert, int64_t total_rows, int64_t gemm_n, int64_t gemm_k, int num_experts,
+//     CutlassGemmConfig gemm_config, int sm_version, int multi_processor_count, cudaStream_t stream,
+//     int* occupancy = nullptr)
+// {
 
-    FT_LOG_DEBUG(__PRETTY_FUNCTION__);
+//     FT_LOG_DEBUG(__PRETTY_FUNCTION__);
 
-    switch (gemm_config.tile_config)
-    {
-    case CutlassTileConfig::CtaShape128x128x8_WarpShape64x64x8:
-        dispatch_gemm_config<T, WeightType, arch, EpilogueTag, cutlass::gemm::GemmShape<128, 128, 8>,
-            cutlass::gemm::GemmShape<64, 64, 8>>(A, B, weight_scales, biases, C, total_rows_before_expert, gemm_n,
-            gemm_k, num_experts, gemm_config, multi_processor_count, stream, occupancy);
-        break;
-    case CutlassTileConfig::Undefined:
-        throw std::runtime_error("[FT Error][dispatch_moe_gemm_to_cutlass][SIMT] gemm config undefined.");
-        break;
-    case CutlassTileConfig::ChooseWithHeuristic:
-        throw std::runtime_error(
-            "[FT Error][dispatch_moe_gemm_to_cutlass][SIMT] gemm config should have already been set by heuristic.");
-        break;
-    default:
-        throw std::runtime_error(
-            "[FT Error][dispatch_moe_gemm_to_cutlass][SIMT] Unsupported config for float MoE gemm.");
-        break;
-    }
-}
+//     switch (gemm_config.tile_config)
+//     {
+//     case CutlassTileConfig::CtaShape128x128x8_WarpShape64x64x8:
+//         dispatch_gemm_config<T, WeightType, arch, EpilogueTag, cutlass::gemm::GemmShape<128, 128, 8>,
+//             cutlass::gemm::GemmShape<64, 64, 8>>(A, B, weight_scales, biases, C, total_rows_before_expert, gemm_n,
+//             gemm_k, num_experts, gemm_config, multi_processor_count, stream, occupancy);
+//         break;
+//     case CutlassTileConfig::Undefined:
+//         throw std::runtime_error("[FT Error][dispatch_moe_gemm_to_cutlass][SIMT] gemm config undefined.");
+//         break;
+//     case CutlassTileConfig::ChooseWithHeuristic:
+//         throw std::runtime_error(
+//             "[FT Error][dispatch_moe_gemm_to_cutlass][SIMT] gemm config should have already been set by heuristic.");
+//         break;
+//     default:
+//         throw std::runtime_error(
+//             "[FT Error][dispatch_moe_gemm_to_cutlass][SIMT] Unsupported config for float MoE gemm.");
+//         break;
+//     }
+// }
 
 template <typename T, typename WeightType>
 MoeGemmRunner<T, WeightType>::MoeGemmRunner()
@@ -430,7 +430,7 @@ void MoeGemmRunner<T, WeightType>::run_gemm<EpilogueTag>(const T* A, const Weigh
     static constexpr bool is_weight_only = !std::is_same<T, WeightType>::value;
     static constexpr bool only_simt_configs = std::is_same<T, float>::value;
     std::vector<CutlassGemmConfig> candidate_configs
-        = get_candidate_configs(sm_, true, cutlass::WeightOnlyQuantOp::PER_COLUMN_SCALE_ONLY, only_simt_configs);
+        = get_candidate_configs(sm_, false, cutlass::WeightOnlyQuantOp::PER_COLUMN_SCALE_ONLY, only_simt_configs);
     std::vector<int> occupancies(candidate_configs.size());
 
     for (size_t ii = 0; ii < candidate_configs.size(); ++ii)
