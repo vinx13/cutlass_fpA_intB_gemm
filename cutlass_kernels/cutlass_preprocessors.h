@@ -3,11 +3,19 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 namespace fastertransformer
 {
 
 void preprocess_weights(int8_t* preprocessed_quantized_weight, const int8_t* row_major_quantized_weight,
     size_t num_experts, size_t rows, size_t cols, bool is_int4, int arch);
+
+template<typename ComputeType, typename WeightType>
+void symmetric_quantize(int8_t*                    processed_quantized_weight,
+                        ComputeType*               scale_ptr,
+                        const WeightType*          input_weight_ptr,
+                        const std::vector<size_t>& shape,
+                        bool is_int4);
 
 } // namespace fastertransformer
